@@ -46,6 +46,8 @@ class AccountAnalyticLine(models.Model):
         if self.is_timesheet:
             if result.get('so_line'):
                 sol = self.env['sale.order.line'].browse([result['so_line']])
+            elif result.get('account_id'):
+                sol = False
             else:
                 sol = self.so_line
             if not sol and self.account_id:
@@ -59,6 +61,12 @@ class AccountAnalyticLine(models.Model):
                 result.update({
                     'so_line': sol.id,
                     'product_id': sol.product_id.id,
+                })
+                result = self._get_timesheet_cost(result)
+            else:
+                result.update({
+                    'so_line': False,
+                    'product_id': False,
                 })
                 result = self._get_timesheet_cost(result)
 
