@@ -150,7 +150,7 @@ class CompanyLDAP(osv.osv):
         """
 
         results = []
-        results = conn.search_st(base, ldap.SCOPE_SUBTREE,
+        results = conn.search_st(base.encode('utf-8'), ldap.SCOPE_SUBTREE,
                                  filter, retrieve_attributes, timeout=60)
 
         # Get rid of (None, attrs) for searchResultReference replies
