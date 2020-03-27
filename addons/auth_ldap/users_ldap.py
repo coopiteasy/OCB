@@ -129,6 +129,7 @@ class CompanyLDAP(osv.osv):
             return False
         except ldap.LDAPError:
             _logger.exception('An LDAP exception occurred')
+            return False
         finally:
             conn.unbind()
 
