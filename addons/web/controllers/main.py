@@ -38,6 +38,7 @@ from openerp import http
 from openerp.http import request, serialize_exception as _serialize_exception, content_disposition
 from openerp.exceptions import AccessError, UserError
 from openerp.service.report import exp_report, exp_report_get
+from ldap import LDAPError
 
 _logger = logging.getLogger(__name__)
 
@@ -478,7 +479,10 @@ class Home(http.Controller):
 
         if request.httprequest.method == 'POST':
             old_uid = request.uid
-            uid = request.session.authenticate(request.session.db, request.params['login'], request.params['password'])
+            try:
+                uid = request.session.authenticate(request.session.db, request.params['login'], request.params['password'])
+            except LDAPError:
+                uid = False
             if uid is not False:
                 request.params['login_success'] = True
                 if not redirect:
