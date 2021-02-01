@@ -72,8 +72,8 @@ Toledo8217Protocol = ScaleProtocol(
     statusRegexp=b"\x02\\s*(\\?.)\\r",
     statusParse=_toledo8217StatusParse,
     commandDelay=0.2,
-    weightDelay=0.5,
-    newWeightDelay=0.2,
+    weightDelay=0.1,
+    newWeightDelay=0.1,
     commandTerminator=b'',
     weightCommand=b'W',
     zeroCommand=b'Z',
@@ -101,7 +101,7 @@ ADAMEquipmentProtocol = ScaleProtocol(
     statusParse=None,
     commandTerminator=b"\r\n",
     commandDelay=0.2,
-    weightDelay=0.5,
+    weightDelay=0.1,
     newWeightDelay=5,  # AZExtra beeps every time you ask for a weight that was previously returned!
                        # Adding an extra delay gives the operator a chance to remove the products
                        # before the scale starts beeping. Could not find a way to disable the beeps.
