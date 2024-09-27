@@ -231,7 +231,7 @@ class ProductTemplate(models.Model):
 
     @api.depends('product_variant_ids')
     def _compute_product_variant_id(self):
-        for p in self:
+        for p in self.with_context(active_test=False):
             p.product_variant_id = p.product_variant_ids[:1].id
 
     @api.constrains('company_id')
