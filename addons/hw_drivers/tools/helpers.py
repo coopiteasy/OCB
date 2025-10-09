@@ -236,6 +236,8 @@ def get_img_name():
     return 'iotboxv%s_%s.zip' % (major, minor)
 
 def get_ip():
+    # iotboxless: is localhost
+    return "localhost"
     interfaces = netifaces.interfaces()
     for interface in interfaces:
         if netifaces.ifaddresses(interface).get(netifaces.AF_INET):
@@ -258,7 +260,11 @@ def get_ssid():
     ap = subprocess.call(['systemctl', 'is-active', '--quiet', 'hostapd']) # if service is active return 0 else inactive
     if not ap:
         return subprocess.check_output(['grep', '-oP', '(?<=ssid=).*', '/etc/hostapd/hostapd.conf']).decode('utf-8').rstrip()
-    process_iwconfig = subprocess.Popen(['iwconfig'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # iotboxless: don't crash if iwconfig is not found (is not in PATH by default)
+    try:
+        process_iwconfig = subprocess.Popen(['iwconfig'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except FileNotFoundError:
+        return ""
     process_grep = subprocess.Popen(['grep', 'ESSID:"'], stdin=process_iwconfig.stdout, stdout=subprocess.PIPE)
     return subprocess.check_output(['sed', 's/.*"\\(.*\\)"/\\1/'], stdin=process_grep.stdout).decode('utf-8').rstrip()
 
@@ -283,7 +289,15 @@ def get_commit_hash():
 
 def get_version(detailed_version=False):
     if platform.system() == 'Linux':
-        image_version = read_file_first_line('/var/odoo/iotbox_version')
+        # iotboxless: get version from configure script
+        # image_version = read_file_first_line('/var/odoo/iotbox_version')
+        image_version = ""
+        with open(get_resource_path("point_of_sale", "tools/posbox/posbox_create_image.sh"), "r") as f:
+            for line in f:
+                if line.startswith("VERSION_IOTBOX"):
+                    image_version = line.split("=")[1].strip()
+        image_version += "-iotboxless"
+
     elif platform.system() == 'Windows':
         # updated manually when big changes are made to the windows virtual IoT
         image_version = '22.11'
@@ -418,6 +432,9 @@ def load_iot_handlers():
         path = get_resource_path('hw_drivers', 'iot_handlers', directory)
         filesList = list_file_by_os(path)
         for file in filesList:
+            # iotboxless: prevent loading keyboard and display driver
+            if file.startswith("KeyboardUSBDriver") or file.startswith("Display"):
+                continue
             spec = util.spec_from_file_location(compute_iot_handlers_addon_name(directory, file), str(Path(path).joinpath(file)))
             if spec:
                 module = util.module_from_spec(spec)
@@ -445,7 +462,9 @@ def path_file(*args):
     """
     platform_os = platform.system()
     if platform_os == 'Linux':
-        return Path("~pi", *args).expanduser() # Path.home() returns odoo user's home instead of pi's
+        # iotboxless: use current directory if relative path
+        # return Path("~pi", *args).expanduser() # Path.home() returns odoo user's home instead of pi's
+        return Path(*args)
     elif platform_os == 'Windows':
         return Path().absolute().parent.joinpath('server', *args)
 

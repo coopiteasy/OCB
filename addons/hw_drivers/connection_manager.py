@@ -70,4 +70,5 @@ class ConnectionManager(Thread):
 
 connection_manager = ConnectionManager()
 connection_manager.daemon = True
-connection_manager.start()
+# iotboxless: prevent calling home
+# connection_manager.start()

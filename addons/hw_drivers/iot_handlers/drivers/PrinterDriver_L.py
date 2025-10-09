@@ -87,8 +87,12 @@ class PrinterDriver(Driver):
         })
 
         self.receipt_protocol = 'star' if 'STR_T' in device['device-id'] else 'escpos'
+        # iotboxless: ensure only compatible printers are used
+        self.is_compatible_printer = False
         if 'direct' in self.device_connection and any(cmd in device['device-id'] for cmd in ['CMD:STAR;', 'CMD:ESC/POS;']):
-            self.print_status()
+            # iotboxless: disable useless status printing and set compatibility
+            # self.print_status()
+            self.is_compatible_printer = True
 
     @classmethod
     def supported(cls, device):
@@ -103,16 +107,24 @@ class PrinterDriver(Driver):
                     ppdFile = ppd
                     break
             with cups_lock:
-                if ppdFile:
-                    conn.addPrinter(name=device['identifier'], ppdname=ppdFile, device=device['url'])
-                else:
-                    conn.addPrinter(name=device['identifier'], device=device['url'])
-                conn.setPrinterInfo(device['identifier'], device['device-make-and-model'])
-                conn.enablePrinter(device['identifier'])
-                conn.acceptJobs(device['identifier'])
-                conn.setPrinterUsersAllowed(device['identifier'], ['all'])
-                conn.addPrinterOptionDefault(device['identifier'], "usb-no-reattach", "true")
-                conn.addPrinterOptionDefault(device['identifier'], "usb-unidir", "true")
+                # iotboxless: don't fail if a printer cannot be configured
+                try:
+                    if ppdFile:
+                        conn.addPrinter(name=device['identifier'], ppdname=ppdFile, device=device['url'])
+                    else:
+                        conn.addPrinter(name=device['identifier'], device=device['url'])
+                    conn.setPrinterInfo(device['identifier'], device['device-make-and-model'])
+                    conn.enablePrinter(device['identifier'])
+                    conn.acceptJobs(device['identifier'])
+                    conn.setPrinterUsersAllowed(device['identifier'], ['all'])
+                    conn.addPrinterOptionDefault(device['identifier'], "usb-no-reattach", "true")
+                    conn.addPrinterOptionDefault(device['identifier'], "usb-unidir", "true")
+                except IPPError as e:
+                    _logger.warning(
+                        "Error configuring printer {0} ({1}): {2}".format(
+                            device['identifier'], device['url'], e
+                        )
+                    )
             return True
         return False
 
@@ -373,7 +385,9 @@ class PrinterController(http.Controller):
 
     @http.route('/hw_proxy/default_printer_action', type='json', auth='none', cors='*')
     def default_printer_action(self, data):
-        printer = next((d for d in iot_devices if iot_devices[d].device_type == 'printer' and iot_devices[d].device_connection == 'direct'), None)
+        # iotboxless: ensure only compatible printers are used
+        # printer = next((d for d in iot_devices if iot_devices[d].device_type == 'printer' and iot_devices[d].device_connection == 'direct'), None)
+        printer = next((d for d in iot_devices if iot_devices[d].device_type == 'printer' and iot_devices[d].is_compatible_printer), None)
         if printer:
             iot_devices[printer].action(data)
             return True

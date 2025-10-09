@@ -83,23 +83,25 @@ class Manager(Thread):
         Thread that will load interfaces and drivers and contact the odoo server with the updates
         """
 
-        helpers.start_nginx_server()
-        if platform.system() == 'Linux' and not helpers.get_odoo_server_url():
-            self.migrate_config()
+        # iotboxless: disable automatic upgrade and certificate verification
+        # helpers.start_nginx_server()
+        # if platform.system() == 'Linux' and not helpers.get_odoo_server_url():
+        #     self.migrate_config()
 
-        _logger.info("IoT Box Image version: %s", helpers.get_version(detailed_version=True))
-        if platform.system() == 'Linux' and helpers.get_odoo_server_url():
-            helpers.check_git_branch()
-            helpers.generate_password()
-        is_certificate_ok, certificate_details = helpers.get_certificate_status()
-        if not is_certificate_ok:
-            _logger.warning("An error happened when trying to get the HTTPS certificate: %s",
-                            certificate_details)
+        # _logger.info("IoT Box Image version: %s", helpers.get_version(detailed_version=True))
+        # if platform.system() == 'Linux' and helpers.get_odoo_server_url():
+        #     helpers.check_git_branch()
+        #     helpers.generate_password()
+        # is_certificate_ok, certificate_details = helpers.get_certificate_status()
+        # if not is_certificate_ok:
+        #     _logger.warning("An error happened when trying to get the HTTPS certificate: %s",
+        #                     certificate_details)
 
         # We first add the IoT Box to the connected DB because IoT handlers cannot be downloaded if
         # the identifier of the Box is not found in the DB. So add the Box to the DB.
-        self.send_alldevices()
-        helpers.download_iot_handlers()
+        # iotboxless: disable communication with the odoo instance
+        # self.send_alldevices()
+        # helpers.download_iot_handlers()
         helpers.load_iot_handlers()
 
         # Start the interfaces
@@ -112,16 +114,18 @@ class Manager(Thread):
                 _logger.exception("Interface %s could not be started", str(interface))
 
         # Set scheduled actions
-        schedule and schedule.every().day.at("00:00").do(helpers.get_certificate_status)
+        # iotboxless: disable scheduled actions
+        # schedule and schedule.every().day.at("00:00").do(helpers.get_certificate_status)
 
         # Check every 3 secondes if the list of connected devices has changed and send the updated
         # list to the connected DB.
         self.previous_iot_devices = []
         while 1:
             try:
-                if iot_devices != self.previous_iot_devices:
-                    self.previous_iot_devices = iot_devices.copy()
-                    self.send_alldevices()
+                # iotboxless: disable communication with the odoo instance
+                # if iot_devices != self.previous_iot_devices:
+                #     self.previous_iot_devices = iot_devices.copy()
+                #     self.send_alldevices()
                 time.sleep(3)
                 schedule and schedule.run_pending()
             except Exception:
