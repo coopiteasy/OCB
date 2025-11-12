@@ -50,7 +50,10 @@ var PaymentSix = PaymentInterface.extend({
         settings.dcc = false;
 
         this.terminal = new timapi.Terminal(settings);
-        this.terminal.setPosId(this.pos.pos_session.name);
+        // fix: with some terminals (for example: ingenico lane/5000), using
+        // this.pos.pos_session.name as PosId results in the error: "Element
+        // PosId is too long". using simply the pos.config id fixes this.
+        this.terminal.setPosId(this.pos.config.id.toString());
         this.terminal.setUserId(this.pos.pos_session.user_id[0]);
 
         this.terminalListener = new timapi.DefaultTerminalListener();
